@@ -55,6 +55,11 @@ Documentation = "https://docs.litellm.ai"
 # supply-chain-pinned to a vetted, aged release.
 [project.optional-dependencies]
 switchyard = ["nemo-switchyard==0.4.0a1"]
+spend-log-replication = [
+    "confluent-kafka>=2.16.1,<3.0",
+    "psycopg>=3.2,<4.0",
+    "psycopg-binary>=3.2,<4.0",
+]
 proxy = [
     "sqlalchemy>=2.0.49,<2.1",
     "alembic>=1.18.4,<2.0",
@@ -269,6 +274,7 @@ admin-mcp = [
     "litellm-admin-mcp @ https://github.com/BerriAI/liteadmin-mcp/archive/31fb096904ae05684c0779110a93b135b5601182.tar.gz#sha256=5803a20a00a18177f4591706956f31be311879543049b8b38143ad90bb1cb0a6 ; python_version >= '3.12'",
 ]
 proxy-dev = [
+    "confluent-kafka>=2.16.1,<3.0",
     "sqlalchemy==2.0.49",
     "pynacl==1.6.2",
     "alembic==1.18.4",

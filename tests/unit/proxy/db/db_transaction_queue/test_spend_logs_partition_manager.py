@@ -3,8 +3,8 @@ Tests for SpendLogsPartitionManager: partition naming/bounds math, retention
 selection, the non-partitioned no-op safety path, and the drop/ensure SQL flow.
 """
 
-from contextlib import asynccontextmanager
 from collections.abc import Awaitable, Callable
+from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock
 
@@ -192,9 +192,10 @@ async def test_drop_partitions_older_than_drops_expired_only():
 
     assert dropped == ["LiteLLM_SpendLogs_p20260601"]
     executed = " ".join(call.args[0] for call in client.db.execute_raw.call_args_list)
-    assert 'DROP TABLE IF EXISTS "LiteLLM_SpendLogs_p20260601"' in executed
-    assert "p20260609" not in executed
-    assert "pdefault" not in executed
+    assert "DROP TABLE IF EXISTS %I" in executed
+    assert b"LiteLLM_SpendLogs_p20260601".hex() in executed
+    assert b"LiteLLM_SpendLogs_p20260609".hex() not in executed
+    assert b"LiteLLM_SpendLogs_pdefault".hex() not in executed
 
 
 @pytest.mark.asyncio

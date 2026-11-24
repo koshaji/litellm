@@ -83,6 +83,7 @@ COPY litellm/packaging/litellm-proxy/pyproject.toml litellm/packaging/litellm-pr
 # Install third-party dependencies (cached unless pyproject.toml/uv.lock change)
 RUN uv sync --frozen --no-install-project --no-install-workspace --no-default-groups --no-editable \
     --extra proxy \
+    --extra spend-log-replication \
     --extra proxy-runtime \
     --group admin-mcp \
     --extra extra_proxy \
@@ -108,6 +109,7 @@ ARG MATURIN_PEP517_ARGS=""
 RUN uv build --package litellm-proxy --wheel --out-dir /wheels
 RUN uv sync --frozen --no-install-package litellm-proxy --no-default-groups --no-editable \
     --extra proxy \
+    --extra spend-log-replication \
     --extra proxy-runtime \
     --group admin-mcp \
     --extra extra_proxy \

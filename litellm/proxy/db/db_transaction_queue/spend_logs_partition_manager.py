@@ -336,7 +336,7 @@ class SpendLogsPartitionManager:
                 verbose_proxy_logger.info("Run budget spent, leaving the remaining partitions for the next run")
                 return
             try:
-                await self._execute_bounded_ddl(prisma_client, f'DROP TABLE IF EXISTS "{name}"', budget_ms)
+                await self._drop_partition(prisma_client, name, budget_ms)
             except Exception as e:  # noqa: BLE001  # a partition this run cannot drop is left for the next one
                 verbose_proxy_logger.warning("Failed to drop spend-log partition %s: %s", name, e)
                 return
@@ -361,8 +361,31 @@ class SpendLogsPartitionManager:
                 verbose_proxy_logger.info("Run budget spent, leaving the remaining partitions for the next run")
                 break
             try:
-                await self._execute_bounded_ddl(prisma_client, f'DROP TABLE IF EXISTS "{name}"', budget_ms)
+                await self._drop_partition(prisma_client, name, budget_ms)
                 dropped.append(name)
             except Exception as e:
                 verbose_proxy_logger.warning("Failed to drop spend-log partition %s: %s", name, e)
         return dropped
+
+    async def _drop_partition(self, prisma_client: "PrismaClient", name: str, timeout_ms: int) -> None:
+        # A DO block can't bind parameters. Encode the catalog name for the SQL literal.
+        name_hex: Final = name.encode().hex()
+        await self._execute_bounded_ddl(
+            prisma_client,
+            f"""
+            DO $$
+            DECLARE
+                partition_name text := convert_from(decode('{name_hex}', 'hex'), 'UTF8');
+                partition_table regclass := to_regclass(quote_ident(partition_name));
+            BEGIN
+                IF partition_table IS NOT NULL THEN
+                    IF to_regprocedure('litellm_mark_spend_log_partition_for_drop(regclass)') IS NOT NULL THEN
+                        PERFORM litellm_mark_spend_log_partition_for_drop(partition_table);
+                    END IF;
+                    EXECUTE format('DROP TABLE IF EXISTS %I', partition_name);
+                END IF;
+            END
+            $$;
+            """,
+            timeout_ms,
+        )
